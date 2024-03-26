@@ -9,6 +9,11 @@ use App\Model\Acl\Role;
 use App\Model\Application\ApplicationFactory;
 use App\Model\Application\Repositories\ApplicationRepository;
 use App\Model\Enums\ProgramMandatoryType;
+use App\Model\Mailing\Mail;
+use App\Model\Mailing\MailQueue;
+use App\Model\Mailing\Repositories\TemplateRepository;
+use App\Model\Mailing\Template;
+use App\Model\Mailing\TemplateFactory;
 use App\Model\Program\Block;
 use App\Model\Program\Commands\SaveProgram;
 use App\Model\Program\Program;
@@ -38,6 +43,8 @@ final class SaveProgramHandlerPerformanceTest extends CommandHandlerTest
 
     private SettingsRepository $settingsRepository;
 
+    private TemplateRepository $templateRepository;
+
     /**
      * Vytvoření automaticky zapisovaného programu - oprávnění uživatelé jsou zapsáni.
      */
@@ -60,6 +67,7 @@ final class SaveProgramHandlerPerformanceTest extends CommandHandlerTest
             $user = new User();
             $user->setFirstName('First');
             $user->setLastName('Last');
+            $user->setEmail('mail@mail.cz');
             $user->addRole($role);
             $user->setApproved(true);
             $this->userRepository->save($user);
@@ -83,7 +91,7 @@ final class SaveProgramHandlerPerformanceTest extends CommandHandlerTest
     /** @return string[] */
     protected function getTestedAggregateRoots(): array
     {
-        return [Program::class, Settings::class];
+        return [Program::class, Settings::class, Mail::class, MailQueue::class, Template::class];
     }
 
     protected function _before(): void
@@ -98,8 +106,11 @@ final class SaveProgramHandlerPerformanceTest extends CommandHandlerTest
         $this->roleRepository        = $this->tester->grabService(RoleRepository::class);
         $this->applicationRepository = $this->tester->grabService(ApplicationRepository::class);
         $this->settingsRepository    = $this->tester->grabService(SettingsRepository::class);
+        $this->templateRepository    = $this->tester->grabService(TemplateRepository::class);
 
         $this->settingsRepository->save(new Settings(Settings::IS_ALLOWED_REGISTER_PROGRAMS_BEFORE_PAYMENT, (string) false));
         $this->settingsRepository->save(new Settings(Settings::SEMINAR_NAME, 'test'));
+
+        TemplateFactory::createTemplate($this->templateRepository, Template::PROGRAM_REGISTERED);
     }
 }
